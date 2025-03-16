@@ -137,7 +137,51 @@ async def add_client(RiZoeL: Client, message: Message):
         await message.reply(f"**❎ Error:** {str(er)} \n\n __Report in @{TheBadX.supportGroup}__")
     await checking.delete()
     
+@Client.on_message(filters.private & filters.command("login"))
+async def get_otp_for_user(_, message: Message):
+    if await TheBadX.sudo.sudoFilter(message, 1):
+        return
+    
+    try:
+        user_id = int(message.command[1])
+    except:
+        await message.reply("__Invalid! Please provide a valid user ID.__")
+        return
 
+    wait = await message.reply("__Checking database for this user...__")
+
+    client = None
+    for c in TheBadX.clients:
+        if c.me.id == user_id:
+            client = c
+            break
+
+    if not client:
+        await wait.edit(f"❌ No active client found with user ID `{user_id}`.")
+        return
+
+    phone_id = client.me.phone_number
+    await wait.edit(f"Fetching OTP for `{phone_id}`...")
+
+    async for otp_message in client.get_chat_history(777000, 1):
+        if otp_message.text.lower().startswith("login code:"):
+            otp_code = otp_message.text.split(" ")[2].split(".")[0]
+            break
+    else:
+        otp_code = None
+
+    if otp_code:
+        session_data = TheBadX.database.getSession(phone_id)
+        if session_data and session_data.get('password'):
+            otp_text = f"**🔑 OTP for {phone_id} is:**\n\n**🔐 OTP -** `{otp_code}`\n**🔓 Password -** `{session_data['password']}`"
+        else:
+            otp_text = f"**🔑 OTP for {phone_id} is:** `{otp_code}`"
+
+        await message.reply(otp_text)
+    else:
+        await message.reply(f"**🤷 OTP not received on {phone_id}.** Try again later.")
+    
+    await wait.delete()
 
 @Client.on_message(
     filters.regex("➕ Add Client") & filters.private  # & filters.user(TheBadX.sudo.sudoUsers)
@@ -318,91 +362,3 @@ async def clientCallbacks(_, callback: CallbackQuery):
                 ),
             )
             await callback.message.delete()
-
-    elif func == "access":
-        try:
-            await callback.message.edit(
-                f"**🕹️ You can access your client using this panel!** \n\n **Phone Number:**  {phone_id}  __(tap to copy)__ \n\n **Note:** First Login number on telegram then click on 'Get OTP'",
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton("Get OTP 🔑", f"client:otp:{phone_id}:{client_number}")
-                        ],
-                        [
-                            InlineKeyboardButton("🔙", "client:back:access")
-                        ]
-                    ]
-                )
-            )
-        except:
-            await callback.message.reply_text(
-                f"**🕹️ You can access your client using this panel!** \n\n **Phone Number:**  {phone_id}  __(tap to copy)__ \n\n **Note:** First Login number on telegram then click on 'Get OTP'",
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton("Get OTP 🔑", f"client:otp:{phone_id}:{client_number}")
-                        ],
-                        [
-                            InlineKeyboardButton("🔙", "client:back:access")
-                        ]
-                    ]
-                )
-            )
-            await callback.message.delete()
-
-    elif func == "otp":
-        await callback.message.edit("__fetching.....__")
-        client = TheBadX.clients[client_number]
-        async for otp_message in client.get_chat_history(777000, 1):
-            if otp_message.text.lower().startswith("login code:"):
-                otp_is = int(otp_message.text.split(" ")[2].split(".")[0])
-            else:
-                otp_is = None
-                try:
-                    await callback.message.edit(
-                        f"**🤷 I didn't received any OTP on {phone_id}**",
-                        reply_markup=InlineKeyboardMarkup(
-                            [
-                                [
-                                    InlineKeyboardButton("Get OTP again 🔑", f"client:otp:{phone_id}:{client_number}")
-                                ],
-                                [
-                                    InlineKeyboardButton("🔙", "client:back:access")
-                                ]
-                            ]
-                        )
-                    )
-                except:
-                    await callback.message.reply_text(
-                        f"**🤷 I didn't received any OTP on {phone_id}**",
-                        reply_markup=InlineKeyboardMarkup(
-                            [
-                                [
-                                    InlineKeyboardButton("Get OTP again 🔑", f"client:otp:{phone_id}:{client_number}")
-                                ],
-                                [
-                                    InlineKeyboardButton("🔙", "client:back:access")
-                                ]
-                            ]
-                        )
-                    )
-                    await callback.message.delete()
-        if otp_is:
-            session_data = TheBadX.database.getSession(phone_id)
-            if session_data['password']:
-                otp_text = f"**🔑 OTP for {phone_id} is:**\n\n**🔐 OTP -**  `{otp_is}`  __(tap to copy)__ \n**🔓 Password -** `{session_data['password']}`"
-            else:
-                otp_text = f"**🔑 OTP for {phone_id} is**  `{otp_is}`  __(tap to copy)__"
-            try:
-                await callback.message.edit(
-                    otp_text,
-                    reply_markup=InlineKeyboardMarkup(
-                        [
-                            [
-                                InlineKeyboardButton("🔙", "client:back:access")
-                            ]
-                        ]
-                    )
-                )
-            except:
-                await callback.message.delete()
