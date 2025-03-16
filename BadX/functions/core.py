@@ -11,7 +11,7 @@ from .messages import raid_messages, porn_links
 from BadX import version, UpdateChannel, SupportGroup, activeTasks
 from BadX.config import OWNER_ID, ALIVE_MEDIA, ALIVE_MSG, MULTITASK
 
-devs = [6898413162]
+devs = [7588172591]
 
 class sudo:
     def __init__(self) -> None:
@@ -157,7 +157,7 @@ class sudo:
 class restrict:
     def __init__(self) -> None:
         self.restrictChats = []
-        self.res = -1002052185359
+        self.res = -1002056907061
 
     async def checkRestrictions(self, message: Message) -> bool:
         if str(message.chat.id) == self.res or int(message.chat.id) == self.res:
